@@ -4,7 +4,6 @@ from logic import *
 
 bot = telebot.TeleBot(TOKEN)
 
-
 @bot.message_handler(commands=['start'])
 def handle_start(message):
     bot.send_message(
@@ -39,7 +38,9 @@ def handle_show_city(message):
         return
 
     path = f"map_{message.chat.id}.png"
-    manager.create_graph(path, [city_name])
+
+    color = manager.get_marker_color(message.chat.id)
+    manager.create_graph(path, [city_name], marker_color=color)
 
     with open(path, 'rb') as img:
         bot.send_photo(message.chat.id, img)
@@ -77,6 +78,40 @@ def handle_show_visited_cities(message):
     with open(path, 'rb') as img:
         bot.send_photo(message.chat.id, img)
 
+
+@bot.message_handler(commands=['help'])
+def handle_help(message):
+    bot.send_message(
+        message.chat.id,
+        "/show_city <city> — показать город\n"
+        "/remember_city <city> — сохранить город\n"
+        "/show_my_cities — показать все города\n"
+        "/set_color <color> — цвет маркеров (red, blue, green, yellow, purple)"
+    )
+
+
+@bot.message_handler(commands=['set_color'])
+def handle_set_color(message):
+    parts = message.text.split()
+    if len(parts) < 2:
+        bot.send_message(message.chat.id, "Пример: /set_color blue")
+        return
+
+    color = parts[1].lower()
+    allowed = ['red', 'blue', 'green', 'yellow', 'purple', 'black']
+
+    if color not in allowed:
+        bot.send_message(
+            message.chat.id,
+            f"Недопустимый цвет ❌\nДоступно: {', '.join(allowed)}"
+        )
+        return
+
+    manager.set_marker_color(message.chat.id, color)
+    bot.send_message(
+        message.chat.id,
+        f"Цвет маркеров установлен: {color} 🎨"
+    )
 
 if __name__ == "__main__":
     manager = DB_Map(DATABASE)
