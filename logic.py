@@ -109,3 +109,61 @@ class DB_Map():
 
         plt.savefig(path, bbox_inches='tight')
         plt.close()
+    
+    def get_cities_by_country(self, country):
+        conn = sqlite3.connect(self.database)
+        with conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT city FROM cities WHERE country = ?",
+                (country,)
+            )
+            return [row[0] for row in cursor.fetchall()]
+        
+    def get_cities_by_population(self, min_population, max_population=None):
+        conn = sqlite3.connect(self.database)
+        with conn:
+            cursor = conn.cursor()
+
+            if max_population:
+                cursor.execute(
+                    "SELECT city FROM cities WHERE population BETWEEN ? AND ?",
+                    (min_population, max_population)
+                )
+            else:
+                cursor.execute(
+                    "SELECT city FROM cities WHERE population >= ?",
+                    (min_population,)
+                )
+
+            return [row[0] for row in cursor.fetchall()]
+        
+    def get_cities_by_country_and_population(
+        self, country, min_population, max_population=None
+):
+        conn = sqlite3.connect(self.database)
+        with conn:
+            cursor = conn.cursor()
+
+            if max_population:
+                cursor.execute(
+                    '''
+                    SELECT city FROM cities
+                    WHERE country = ?
+                    AND population BETWEEN ? AND ?
+                    ''',
+                    (country, min_population, max_population)
+                )
+            else:
+                cursor.execute(
+                    '''
+                    SELECT city FROM cities
+                    WHERE country = ?
+                    AND population >= ?
+                    ''',
+                    (country, min_population)
+                )
+
+            return [row[0] for row in cursor.fetchall()]
+
+

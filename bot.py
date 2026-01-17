@@ -86,7 +86,10 @@ def handle_help(message):
         "/show_city <city> — показать город\n"
         "/remember_city <city> — сохранить город\n"
         "/show_my_cities — показать все города\n"
-        "/set_color <color> — цвет маркеров (red, blue, green, yellow, purple)"
+        "/set_color <color> — цвет маркеров (red, blue, green, yellow, purple\n"
+        "/show_country <country> — города страны\n"
+        "/show_population <min> [max] — города по населению\n"
+        "/show_country_population <country> <min> [max] — страна + население" \
     )
 
 
@@ -112,6 +115,85 @@ def handle_set_color(message):
         message.chat.id,
         f"Цвет маркеров установлен: {color} 🎨"
     )
+
+@bot.message_handler(commands=['show_country'])
+def handle_show_country(message):
+    parts = message.text.split(maxsplit=1)
+    if len(parts) < 2:
+        bot.send_message(message.chat.id, "Пример: /show_country Germany")
+        return
+
+    country = parts[1]
+    cities = manager.get_cities_by_country(country)
+
+    if not cities:
+        bot.send_message(message.chat.id, "Города не найдены 😢")
+        return
+
+    path = f"country_{message.chat.id}.png"
+    color = manager.get_marker_color(message.chat.id)
+    manager.create_graph(path, cities, marker_color=color)
+
+    with open(path, 'rb') as img:
+        bot.send_photo(message.chat.id, img)
+
+@bot.message_handler(commands=['show_population'])
+def handle_show_population(message):
+    parts = message.text.split()
+
+    if len(parts) < 2:
+        bot.send_message(
+            message.chat.id,
+            "Пример:\n/show_population 1000000\n/show_population 500000 2000000"
+        )
+        return
+
+    min_pop = int(parts[1])
+    max_pop = int(parts[2]) if len(parts) > 2 else None
+
+    cities = manager.get_cities_by_population(min_pop, max_pop)
+
+    if not cities:
+        bot.send_message(message.chat.id, "Города не найдены 😢")
+        return
+
+    path = f"population_{message.chat.id}.png"
+    color = manager.get_marker_color(message.chat.id)
+    manager.create_graph(path, cities, marker_color=color)
+
+    with open(path, 'rb') as img:
+        bot.send_photo(message.chat.id, img)
+
+@bot.message_handler(commands=['show_country_population'])
+def handle_show_country_population(message):
+    parts = message.text.split()
+
+    if len(parts) < 3:
+        bot.send_message(
+            message.chat.id,
+            "Пример:\n/show_country_population Japan 1000000\n"
+            "/show_country_population USA 500000 3000000"
+        )
+        return
+
+    country = parts[1]
+    min_pop = int(parts[2])
+    max_pop = int(parts[3]) if len(parts) > 3 else None
+
+    cities = manager.get_cities_by_country_and_population(
+        country, min_pop, max_pop
+    )
+
+    if not cities:
+        bot.send_message(message.chat.id, "Города не найдены 😢")
+        return
+
+    path = f"country_population_{message.chat.id}.png"
+    color = manager.get_marker_color(message.chat.id)
+    manager.create_graph(path, cities, marker_color=color)
+
+    with open(path, 'rb') as img:
+        bot.send_photo(message.chat.id, img)
 
 if __name__ == "__main__":
     manager = DB_Map(DATABASE)
